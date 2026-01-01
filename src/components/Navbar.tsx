@@ -3,22 +3,41 @@
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const pathname = usePathname();
   const isHome = pathname === "/home";
   const isAuth = pathname.startsWith("/auth");
+  const [isScrolled, setIsScrolled] = useState(false);
   const isLoggedIn = false;
   const showBreadcrumb = pathname.startsWith("/shop/product/") && !isAuth;
-  const logoSrc =
-    isHome || isAuth ? "/union-bakery.png" : "/union-bakery-white.png";
+  const logoSrc = isAuth ? "/union-bakery.png" : "/union-bakery-white.png";
+
+  useEffect(() => {
+    if (!isHome) {
+      setIsScrolled(false);
+      return;
+    }
+
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isHome]);
 
   return (
     <header
       className={[
-        "w-full border-b border-border text-primary-foreground backdrop-blur",
-        isHome || isAuth ? "bg-transparent" : "bg-primary",
+        "w-full text-primary-foreground",
+        isHome ? "sticky top-0 z-50" : "",
+        isAuth ? "bg-transparent" : "",
+        isHome ? (isScrolled ? "bg-primary" : "bg-transparent") : "bg-primary",
         isAuth ? "border-transparent" : "",
       ]
         .filter(Boolean)
