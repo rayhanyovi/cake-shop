@@ -1,6 +1,9 @@
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
-const baseURL = process.env.API_BASE_URL ?? "http://localhost:3000";
+const baseURL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  process.env.API_BASE_URL ??
+  "http://localhost:3000";
 
 export type ApiErrorItem = {
   error: string;
@@ -37,6 +40,11 @@ const apiClient = axios.create({
 const isLoginRedirect = (response: AxiosResponse) => {
   const responseUrl = response.request?.responseURL;
   if (!responseUrl) {
+    return false;
+  }
+
+  const originalUrl = response.config?.url ?? "";
+  if (originalUrl.toLowerCase().includes("/login")) {
     return false;
   }
 
