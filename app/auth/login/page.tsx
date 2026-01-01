@@ -66,8 +66,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 flex w-full justify-center px-4">
-      <div className="flex min-h-screen w-full flex-col justify-center max-w-157 space-y-8">
+    <div className="flex-col flex-1 bg-transparent flex w-full items-center justify-center px-4">
+      <div className="flex h-full w-full flex-col justify-center max-w-157 space-y-8">
         {/* CARD LOGIN FORM */}
         <div className="border border-border bg-card p-8 w-full space-y-8">
           <div className="space-y-2">

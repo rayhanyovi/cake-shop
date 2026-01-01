@@ -64,8 +64,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 flex w-full justify-center">
-      <div className="flex min-h-screen w-full max-w-157 flex-col justify-center">
+    <div className="flex w-full justify-center items-center flex-1 flex-col">
+      <div className="flex w-full max-w-157 flex-col justify-center">
         <div className="w-full border border-border bg-card p-8">
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-foreground">
@@ -232,7 +232,9 @@ export default function RegisterPage() {
               <a
                 href={`/auth/login${
                   searchParams.get("ref")
-                    ? `?ref=${encodeURIComponent(searchParams.get("ref") ?? "")}`
+                    ? `?ref=${encodeURIComponent(
+                        searchParams.get("ref") ?? ""
+                      )}`
                     : ""
                 }`}
                 className="font-semibold text-foreground"
