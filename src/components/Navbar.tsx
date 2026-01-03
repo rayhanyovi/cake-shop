@@ -1,24 +1,37 @@
 "use client";
 
-import { Separator } from "@radix-ui/react-dropdown-menu";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/src/context/AuthContext";
+import CartDrawer from "@/src/components/CartDrawer";
 
 export default function Navbar() {
   const pathname = usePathname();
   const isHome = pathname === "/home";
   const isAuth = pathname.startsWith("/auth");
   const [isScrolled, setIsScrolled] = useState(false);
-  const isLoggedIn = false;
-  const showBreadcrumb = pathname.startsWith("/shop/product/") && !isAuth;
+  const { isAuth: isLoggedIn } = useAuth();
+  const [isMobile, setIsMobile] = useState(false);
+  const showBreadcrumb = pathname.startsWith("/product/") && !isAuth;
   const logoSrc = isAuth ? "/union-bakery.png" : "/union-bakery-white.png";
+  const breadcrumbSlug = showBreadcrumb
+    ? pathname.split("/").filter(Boolean).pop() ?? ""
+    : "";
+  const breadcrumbLabel = breadcrumbSlug
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 
   useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+
     if (!isHome) {
       setIsScrolled(false);
-      return;
+      return () => media.removeEventListener("change", update);
     }
 
     const handleScroll = () => {
@@ -28,22 +41,37 @@ export default function Navbar() {
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
 
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      media.removeEventListener("change", update);
+    };
   }, [isHome]);
 
   return (
     <header
       className={[
-        "w-full text-primary-foreground",
+        "relative w-full text-primary-foreground overflow-hidden",
         isHome ? "sticky top-0 z-50" : "",
         isAuth ? "bg-transparent" : "",
-        isHome ? (isScrolled ? "bg-primary" : "bg-transparent") : "bg-primary",
+        isHome ? "bg-transparent" : "bg-primary",
         isAuth ? "border-transparent" : "",
       ]
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="mx-auto flex w-full max-w-7xl flex-col px-6 py-3">
+      {isHome ? (
+        <>
+          <div className="absolute inset-0 bg-linear-to-b from-slate-900/40 to-transparent pointer-events-none" />
+          <div
+            className={[
+              "absolute inset-0 bg-primary transition-transform duration-500 ease-out will-change-transform pointer-events-none",
+              isScrolled ? "translate-y-0" : "-translate-y-full",
+            ].join(" ")}
+            aria-hidden="true"
+          />
+        </>
+      ) : null}
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col px-6 py-3">
         <div
           className={[
             "flex items-center",
@@ -66,7 +94,7 @@ export default function Navbar() {
             ].join(" ")}
           >
             <Link
-              href="/shop"
+              href="/shop/all"
               className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
             >
               Shop
@@ -84,15 +112,19 @@ export default function Navbar() {
               FAQ
             </Link>
             <>•</>
-            <Link
-              href={isLoggedIn ? "/cart" : "/auth/login"}
-              className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
-            >
-              Cart
-            </Link>
+            {isMobile ? (
+              <Link
+                href={isLoggedIn ? "/cart" : "/auth/login"}
+                className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
+              >
+                Cart
+              </Link>
+            ) : (
+              <CartDrawer isLoggedIn={isLoggedIn} />
+            )}
 
             <Link
-              href="/user"
+              href={isLoggedIn ? "/account" : "/auth/login"}
               className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
             >
               Account
@@ -101,7 +133,14 @@ export default function Navbar() {
         </div>
         {showBreadcrumb ? (
           <div className="mt-3 text-xs font-medium uppercase tracking-wide text-primary-foreground/70">
-            Breadcrumb goes here
+            <Link href="/" className="hover:text-primary-foreground">
+              Home
+            </Link>{" "}
+            •{" "}
+            <Link href="/shop/all" className="hover:text-primary-foreground">
+              Shop
+            </Link>{" "}
+            • <span className="text-primary-foreground">{breadcrumbLabel}</span>
           </div>
         ) : null}
       </div>
