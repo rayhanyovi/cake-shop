@@ -35,6 +35,28 @@ export type ProductImage = {
   url: string;
 };
 
+export type ProductListImage = {
+  id: string;
+  previewImage: ProductImage | null;
+};
+
+export type ProductListItem = {
+  id: string;
+  title: string;
+  handle: string;
+  isPackaging: boolean;
+  metafield: unknown | null;
+  isPO: boolean | null;
+  priceRange: {
+    maxVariantPrice: ProductPrice;
+  };
+  bestseller: boolean | null;
+  seasonal: boolean | null;
+  media: {
+    nodes: ProductListImage[];
+  };
+};
+
 export type ProductDetail = {
   id: string;
   title: string;
@@ -48,12 +70,16 @@ export type ProductDetail = {
   };
 };
 
+export const getAllProducts = async () => {
+  const response = await apiClient.get<ApiSuccess<ProductListItem[]>>(
+    "/api/all-products"
+  );
+  return response.data;
+};
+
 export const getProductDetail = async (slug: string) => {
   const response = await apiClient.get<ApiSuccess<ProductDetail>>(
-    `/api/product/${encodeURIComponent(slug)}`,
-    {
-      baseURL: "",
-    },
+    `/api/product/${encodeURIComponent(slug)}`
   );
   return response.data;
 };
