@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
-import { Montserrat } from "next/font/google";
+import { Montserrat, Rozha_One } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/src/components/Navbar";
 import Footer from "@/src/components/Footer";
+import { AuthProvider } from "@/src/context/AuthContext";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
+});
+
+const rozhaOne = Rozha_One({
+  variable: "--font-serif",
+  subsets: ["latin"],
+  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -21,11 +28,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${montserrat.variable}  *:antialiased`}>
-        <div className="min-h-screen bg-transparent flex flex-col">
-          <Navbar />
-          <main className="flex-1 flex flex-col">{children}</main>
-          <Footer />
+      <body
+        className={`${montserrat.variable} ${rozhaOne.variable} *:antialiased`}
+      >
+        <div id="app-root">
+          <AuthProvider>
+            <div className="min-h-screen bg-transparent flex flex-col">
+              <Navbar />
+              <main className="flex-1 flex flex-col">{children}</main>
+              <Footer />
+            </div>
+          </AuthProvider>
         </div>
       </body>
     </html>
