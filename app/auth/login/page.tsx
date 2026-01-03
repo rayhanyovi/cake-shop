@@ -10,6 +10,7 @@ import { Label } from "@/src/components/ui/label";
 import { getApiError } from "@/src/lib/apiClient";
 import { login } from "@/src/services/auth";
 import Link from "next/link";
+import { useAuth } from "@/src/context/AuthContext";
 
 type FieldErrors = Record<string, string>;
 
@@ -27,6 +28,7 @@ export default function LoginPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [showPassword, setShowPassword] = useState(false);
+  const { setAuth } = useAuth();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -44,6 +46,12 @@ export default function LoginPage() {
       const response = await login({ email, password });
 
       console.log("Login successful:", response);
+      if (response?.data?.accessToken && response?.data?.expiresAt) {
+        setAuth({
+          accessToken: response.data.accessToken,
+          expiresAt: response.data.expiresAt,
+        });
+      }
       setSuccessMessage("Login successful.");
       form.reset();
       const ref = searchParams.get("ref");
