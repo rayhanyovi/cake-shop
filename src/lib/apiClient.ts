@@ -1,8 +1,8 @@
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
 const baseURL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  process.env.API_BASE_URL ??
+  process.env.NEXT_PUBLIC_APP_URL ??
+  process.env.APP_URL ??
   "http://localhost:3000";
 
 export type ApiErrorItem = {

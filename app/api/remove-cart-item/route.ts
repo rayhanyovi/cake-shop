@@ -1,32 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const apiBaseUrl = process.env.API_BASE_URL;
-const authCookieName = "accessToken";
 
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ slug: string }> }
-) {
+export async function POST(request: NextRequest) {
   if (!apiBaseUrl) {
     return NextResponse.json(
       { success: false, message: "API base URL is not configured." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
-  console.log("Product proxy request");
-
-  const headers = new Headers();
+  const payload = await request.json();
+  const headers = new Headers({ "Content-Type": "application/json" });
+  const cookie = request.headers.get("cookie");
   const auth = request.headers.get("authorization");
-  const token = request.cookies.get(authCookieName)?.value;
+  if (cookie) headers.set("cookie", cookie);
   if (auth) headers.set("authorization", auth);
-  if (!auth && token) headers.set("authorization", token);
 
-  const { slug } = await context.params;
-  const response = await fetch(
-    `${apiBaseUrl}/product/${encodeURIComponent(slug)}`,
-    { method: "GET", headers }
-  );
+  const response = await fetch(`${apiBaseUrl}/remove-cart-item`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
 
   const data = await response.json();
   const proxyHeaders = new Headers();
