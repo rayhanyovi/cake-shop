@@ -17,14 +17,14 @@ const heroSlides = [
     title: "Sed ut perspiciatis unde omnis",
     body: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     kicker: "Signature Cakes",
-    image: "/Scrub B.jpg",
+    image: "/placeholder.png",
   },
   {
     id: "hero-3",
     title: "At vero eos et accusamus",
     body: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
     kicker: "Seasonal Specials",
-    image: "/Scrub B.jpg",
+    image: "/placeholder.png",
   },
 ];
 
@@ -41,7 +41,7 @@ export default function HeroCarousel() {
 
   const handlePrev = () => {
     setActiveIndex(
-      (prev) => (prev - 1 + heroSlides.length) % heroSlides.length,
+      (prev) => (prev - 1 + heroSlides.length) % heroSlides.length
     );
   };
 
