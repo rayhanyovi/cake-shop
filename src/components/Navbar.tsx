@@ -5,8 +5,15 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/src/context/AuthContext";
-import { useCartAnchor } from "@/src/context/CartAnchorContext";
 import CartDrawer from "@/src/components/CartDrawer";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+  SheetTrigger,
+} from "@/src/components/ui/sheet";
+import { LucideMenu } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -17,8 +24,6 @@ export default function Navbar() {
   const [isMobile, setIsMobile] = useState(false);
   const [showCartTooltip, setShowCartTooltip] = useState(false);
   const tooltipTimeoutRef = useRef<number | null>(null);
-  const cartLinkRef = useRef<HTMLAnchorElement | null>(null);
-  const { registerAnchor } = useCartAnchor();
   const showBreadcrumb = pathname.startsWith("/product/") && !isAuth;
   const logoSrc = isAuth ? "/union-bakery.png" : "/union-bakery-white.png";
   const breadcrumbSlug = showBreadcrumb
@@ -52,15 +57,11 @@ export default function Navbar() {
     };
   }, [isHome]);
 
-  useEffect(() => {
-    if (!isMobile) return;
-    const element = cartLinkRef.current;
-    if (!element) return;
-    registerAnchor(element);
-    return () => {
-      registerAnchor(null);
-    };
-  }, [isMobile, registerAnchor]);
+  const cartTooltip = showCartTooltip ? (
+    <div className="w-fit absolute left-1/2 top-full mt-3 -translate-x-1/2 whitespace-nowrap rounded  bg-[#F4F3EF] px-4 py-4 text-[10px] uppercase text-white animate-in fade-in slide-in-from-top-2 duration-300">
+      Added to cart
+    </div>
+  ) : null;
 
   useEffect(() => {
     const handleAdded = () => {
@@ -83,11 +84,50 @@ export default function Navbar() {
     };
   }, []);
 
-  const cartTooltip = showCartTooltip ? (
-    <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 rounded bg-[#2f3d1a] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white animate-in fade-in slide-in-from-top-2 duration-300">
-      Added to cart
-    </div>
-  ) : null;
+  const mobileMenu = (
+    <Sheet>
+      <SheetTrigger asChild>
+        <button
+          type="button"
+          className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
+          aria-label="Open menu"
+        >
+          <LucideMenu size={20} />
+        </button>
+      </SheetTrigger>
+      <SheetContent
+        side="right"
+        className="border-foreground/10 bg-background w-full max-w-full"
+        style={{
+          backgroundImage: "url('/bg_pattern.webp')",
+          backgroundRepeat: "repeat",
+          backgroundSize: "auto",
+        }}
+      >
+        <SheetTitle className="sr-only">Menu</SheetTitle>
+        <SheetDescription className="sr-only">
+          Navigate the site
+        </SheetDescription>
+        <div className="flex h-full flex-col gap-6 px-6 py-10 text-xs font-bold uppercase tracking-[0.2em] text-foreground">
+          <Link href="/shop/all" className="hover:text-foreground/70">
+            Shop
+          </Link>
+          <Link href="/group-order" className="hover:text-foreground/70">
+            Group Order
+          </Link>
+          <Link href="/faq" className="hover:text-foreground/70">
+            FAQ
+          </Link>
+          <Link
+            href={isLoggedIn ? "/account" : "/auth/login"}
+            className="hover:text-foreground/70"
+          >
+            Account
+          </Link>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
 
   return (
     <header
@@ -113,7 +153,7 @@ export default function Navbar() {
           />
         </>
       ) : null}
-      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col px-6 py-3">
+      <div className="relative z-10 mx-auto flex w-full flex-col px-6 py-3">
         <div
           className={[
             "flex items-center",
@@ -126,6 +166,7 @@ export default function Navbar() {
               alt="Union Bakery"
               width={140}
               height={36}
+              className="!w-[7rem] !md:w-[8.5rem] !h-auto"
               priority
             />
           </Link>
@@ -135,65 +176,63 @@ export default function Navbar() {
               isAuth ? "hidden" : "",
             ].join(" ")}
           >
-            <Link
-              href="/shop/all"
-              className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
-            >
-              Shop
-            </Link>
-            <Link
-              href="/group-order"
-              className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
-            >
-              Group Order
-            </Link>
-            <Link
-              href="/faq"
-              className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
-            >
-              FAQ
-            </Link>
-            <>•</>
             {isMobile ? (
-              <span className="relative">
-                {cartTooltip}
+              <>
+                <span className="relative">
+                  {cartTooltip}
+                  <CartDrawer isLoggedIn={isLoggedIn} fullWidth />
+                </span>
+                {mobileMenu}
+              </>
+            ) : (
+              <>
                 <Link
-                  href={isLoggedIn ? "/cart" : "/auth/login"}
-                  data-cart-target="true"
-                  ref={cartLinkRef}
+                  href="/shop/all"
                   className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
                 >
-                  Cart
+                  Shop
                 </Link>
-              </span>
-            ) : (
-              <span className="relative">
-                {cartTooltip}
-                <CartDrawer isLoggedIn={isLoggedIn} />
-              </span>
+                <Link
+                  href="/group-order"
+                  className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
+                >
+                  Group Order
+                </Link>
+                <Link
+                  href="/faq"
+                  className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
+                >
+                  FAQ
+                </Link>
+                <>•</>
+                <span className="relative">
+                  {cartTooltip}
+                  <CartDrawer isLoggedIn={isLoggedIn} />
+                </span>
+                <Link
+                  href={isLoggedIn ? "/account" : "/auth/login"}
+                  className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
+                >
+                  Account
+                </Link>
+              </>
             )}
-
-            <Link
-              href={isLoggedIn ? "/account" : "/auth/login"}
-              className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
-            >
-              Account
-            </Link>
           </nav>
         </div>
-        {showBreadcrumb ? (
-          <div className="mt-3 text-xs font-medium uppercase tracking-wide text-primary-foreground/70">
-            <Link href="/" className="hover:text-primary-foreground">
-              Home
-            </Link>{" "}
-            •{" "}
-            <Link href="/shop/all" className="hover:text-primary-foreground">
-              Shop
-            </Link>{" "}
-            • <span className="text-primary-foreground">{breadcrumbLabel}</span>
-          </div>
-        ) : null}
       </div>
+
+      {showBreadcrumb ? (
+        <div className="mt-3 flex flex-row gap-4 text-xs font-medium uppercase tracking-wide bg-primary-darkened text-primary-foreground/70 py-2 px-5 md:px-8">
+          <Link href="/" className="hover:text-primary-foreground">
+            Home
+          </Link>{" "}
+          •{" "}
+          <Link href="/shop/all" className="hover:text-primary-foreground">
+            Shop
+          </Link>{" "}
+          • <span className="text-primary-foreground">{breadcrumbLabel}</span>
+        </div>
+      ) : null}
     </header>
   );
 }
