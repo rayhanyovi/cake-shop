@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/src/components/Navbar";
 import Footer from "@/src/components/Footer";
 import { AuthProvider } from "@/src/context/AuthContext";
+import { CartAnchorProvider } from "@/src/context/CartAnchorContext";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -33,11 +34,13 @@ export default function RootLayout({
       >
         <div id="app-root">
           <AuthProvider>
-            <div className="min-h-screen bg-transparent flex flex-col">
-              <Navbar />
-              <main className="flex-1 flex flex-col">{children}</main>
-              <Footer />
-            </div>
+            <CartAnchorProvider>
+              <div className="min-h-screen bg-transparent flex flex-col">
+                <Navbar />
+                <main className="flex-1 flex flex-col">{children}</main>
+                <Footer />
+              </div>
+            </CartAnchorProvider>
           </AuthProvider>
         </div>
       </body>
