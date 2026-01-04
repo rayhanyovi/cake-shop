@@ -1,5 +1,9 @@
 import Image from "next/image";
-import { getProductDetail, type ProductDetail } from "@/src/services/product";
+import {
+  getProductDetail,
+  getProductFlagsFromCache,
+  type ProductDetail,
+} from "@/src/services/product";
 import ProductDetailPanel from "@/src/components/ProductDetailPanel";
 
 type ProductPageProps = {
@@ -32,6 +36,12 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
     console.log("Fetched product detail for slug:", slug, response.data);
 
     product = response.data ?? null;
+    if (product) {
+      const flags = await getProductFlagsFromCache(slug);
+      if (flags) {
+        product = { ...product, ...flags };
+      }
+    }
   } catch (error) {
     console.error("Failed to load product detail:", error);
   }
@@ -47,7 +57,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   const primaryImage = product.images?.nodes?.[0];
   return (
     <main className="min-h-screen w-full">
-      <section className="grid min-h-[80vh] w-full grid-cols-1 lg:grid-cols-2 gap-10">
+      <section className="grid min-h-[100vh] w-full grid-cols-1 lg:grid-cols-2 gap-10">
         <div className="relative min-h-[60vh] w-full overflow-hidden bg-muted/30">
           {primaryImage ? (
             <Image

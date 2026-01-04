@@ -1,11 +1,11 @@
 import ProductCard from "@/src/components/ProductCard";
-import { getAllProducts } from "@/src/services/product";
+import { getAllProductsCached } from "@/src/services/product";
 
 export default async function ShopAllPage() {
   let products = [];
 
   try {
-    const response = await getAllProducts();
+    const response = await getAllProductsCached();
     console.log("ShopAllPage products response:", response);
     products = Array.isArray(response.data) ? response.data : [];
   } catch (error) {
@@ -18,7 +18,7 @@ export default async function ShopAllPage() {
     <main className="min-h-screen w-full">
       <section className="mx-auto w-full px-10 py-16 ">
         <header className="space-y-2">
-          <h1 className="text-2xl font-bold uppercase tracking-[0.12em] text-foreground">
+          <h1 className="text-2xl font-extrabold uppercase text-foreground">
             Handcrafted Signature Cakes.
           </h1>
           <p className="text-sm italic text-muted-foreground">

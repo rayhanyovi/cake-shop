@@ -61,6 +61,8 @@ export type ProductDetail = {
   id: string;
   title: string;
   description: string;
+  bestseller?: boolean | null;
+  seasonal?: boolean | null;
   variants: {
     nodes: ProductVariant[];
   };
@@ -75,6 +77,52 @@ export const getAllProducts = async () => {
     "/api/all-products"
   );
   return response.data;
+};
+
+const PRODUCT_LIST_TTL_MS = 10 * 60 * 1000;
+let productListCache: {
+  data: ProductListItem[];
+  expiresAt: number;
+} | null = null;
+
+export const getAllProductsCached = async () => {
+  const now = Date.now();
+  if (productListCache && productListCache.expiresAt > now) {
+    return { success: true, data: productListCache.data } as ApiSuccess<
+      ProductListItem[]
+    >;
+  }
+
+  const response = await getAllProducts();
+  if (Array.isArray(response?.data)) {
+    productListCache = {
+      data: response.data,
+      expiresAt: now + PRODUCT_LIST_TTL_MS,
+    };
+  }
+  return response;
+};
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+export const getProductFlagsFromCache = async (slug: string) => {
+  const response = await getAllProductsCached();
+  const items = Array.isArray(response?.data) ? response.data : [];
+  const normalized = slug.trim().toLowerCase();
+  const match =
+    items.find((item) => item.handle?.trim().toLowerCase() === normalized) ??
+    items.find((item) => slugify(item.title) === normalized);
+
+  if (!match) return null;
+  return {
+    bestseller: match.bestseller ?? null,
+    seasonal: match.seasonal ?? null,
+  };
 };
 
 export const getProductDetail = async (slug: string) => {

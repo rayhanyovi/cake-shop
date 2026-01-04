@@ -17,6 +17,19 @@ export async function GET(_request: NextRequest) {
   });
 
   const data = await response.json();
+
+  // It's for testing purposes only: add badges to first few products
+  // if (Array.isArray(data?.data)) {
+  //   data.data = data.data.map((item: unknown, index: number) => {
+  //     const product =
+  //       item && typeof item === "object" ? { ...(item as Record<string, unknown>) } : item;
+  //     if (!product || typeof product !== "object") return product;
+  //     if (index === 0) return { ...product, seasonal: true };
+  //     if (index === 1) return { ...product, bestseller: true };
+  //     if (index === 2) return { ...product, bestseller: true, seasonal: true };
+  //     return product;
+  //   });
+  // }
   const proxyHeaders = new Headers();
   const setCookie = response.headers.get("set-cookie");
   if (setCookie) proxyHeaders.set("set-cookie", setCookie);
