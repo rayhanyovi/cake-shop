@@ -1,8 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getCustomerProfile, type CustomerProfile } from "@/src/services/customer";
+import {
+  getCustomerProfile,
+  type CustomerProfile,
+} from "@/src/services/customer";
 import { useAuth } from "@/src/context/AuthContext";
+import { Button } from "@/src/components/ui/button";
+import { formatPrice } from "@/src/utils/formatPrice";
 
 type OrderLine = {
   id: string;
@@ -21,50 +27,54 @@ type OrderData = {
   subtotal: number;
 };
 
-type CheckoutInfo = {
-  contactEmail: string;
-  delivery: {
-    country: string;
-    firstName: string;
-    lastName: string;
-    province: string;
-    city: string;
-    address: string;
-    postalCode: string;
-    phone: string;
-  };
+type StoredOrder = {
+  data: OrderData;
+  expiresAt: number;
 };
 
-const formatPrice = (value?: number | null) => {
-  if (value === undefined || value === null) return "-";
-  return new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(
-    value,
-  );
+const ORDER_STORAGE_KEY = "lastOrder";
+const ORDER_TTL_MS = 5 * 60 * 1000;
+
+const readStoredOrder = () => {
+  if (typeof window === "undefined") return null;
+  const stored = localStorage.getItem(ORDER_STORAGE_KEY);
+  if (!stored) return null;
+
+  try {
+    const parsed = JSON.parse(stored) as StoredOrder | OrderData;
+
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "data" in parsed &&
+      "expiresAt" in parsed
+    ) {
+      const expiresAt = Number((parsed as StoredOrder).expiresAt);
+      if (Number.isFinite(expiresAt) && Date.now() < expiresAt) {
+        return parsed as StoredOrder;
+      }
+      localStorage.removeItem(ORDER_STORAGE_KEY);
+      return null;
+    }
+
+    const fallback = {
+      data: parsed as OrderData,
+      expiresAt: Date.now() + ORDER_TTL_MS,
+    };
+    localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(fallback));
+    return fallback;
+  } catch {
+    localStorage.removeItem(ORDER_STORAGE_KEY);
+    return null;
+  }
 };
 
 export default function OrderPage() {
   const { accessToken } = useAuth();
-  const [order] = useState<OrderData | null>(() => {
-    if (typeof window === "undefined") return null;
-    const stored = localStorage.getItem("lastOrder");
-    if (!stored) return null;
-    try {
-      return JSON.parse(stored) as OrderData;
-    } catch {
-      return null;
-    }
-  });
-  const [checkoutInfo] = useState<CheckoutInfo | null>(() => {
-    if (typeof window === "undefined") return null;
-    const stored = localStorage.getItem("checkoutInfo");
-    if (!stored) return null;
-    try {
-      return JSON.parse(stored) as CheckoutInfo;
-    } catch {
-      return null;
-    }
-  });
+  const [storedOrder, setStoredOrder] = useState<StoredOrder | null>(null);
+  const order = storedOrder?.data ?? null;
   const [customer, setCustomer] = useState<CustomerProfile | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -79,7 +89,27 @@ export default function OrderPage() {
     loadCustomer();
   }, [accessToken]);
 
-  if (!order) {
+  useEffect(() => {
+    setStoredOrder(readStoredOrder());
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!storedOrder) return;
+    const remaining = storedOrder.expiresAt - Date.now();
+    if (remaining <= 0) {
+      localStorage.removeItem(ORDER_STORAGE_KEY);
+      setStoredOrder(null);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      localStorage.removeItem(ORDER_STORAGE_KEY);
+      setStoredOrder(null);
+    }, remaining);
+    return () => window.clearTimeout(timer);
+  }, [storedOrder]);
+
+  if (!isHydrated || !order) {
     return (
       <main className="min-h-screen w-full px-6 py-12">
         <section className="mx-auto w-full max-w-2xl space-y-4 bg-card p-6">
@@ -87,8 +117,11 @@ export default function OrderPage() {
             Order
           </h1>
           <p className="text-sm text-muted-foreground">
-            No order data found yet.
+            You have no active order.
           </p>
+          <Button asChild className="w-fit">
+            <Link href="/shop/all">Shop now</Link>
+          </Button>
         </section>
       </main>
     );
@@ -108,22 +141,6 @@ export default function OrderPage() {
               </p>
               <p className="text-sm text-muted-foreground">
                 Email: {customer.email}
-              </p>
-            </>
-          ) : null}
-          {checkoutInfo?.delivery ? (
-            <>
-              <p className="text-sm text-muted-foreground">
-                Address: {checkoutInfo.delivery.address},{" "}
-                {checkoutInfo.delivery.city},{" "}
-                {checkoutInfo.delivery.province}{" "}
-                {checkoutInfo.delivery.postalCode},{" "}
-                {checkoutInfo.delivery.country}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Recipient: {checkoutInfo.delivery.firstName}{" "}
-                {checkoutInfo.delivery.lastName} ·{" "}
-                {checkoutInfo.delivery.phone}
               </p>
             </>
           ) : null}
@@ -168,7 +185,7 @@ export default function OrderPage() {
                 </div>
               </div>
               <span className="text-sm font-semibold font-serif text-price">
-                {formatPrice(line.price)}
+                {formatPrice(line.price, { fallback: "-" })}
               </span>
             </div>
           ))}
@@ -177,7 +194,7 @@ export default function OrderPage() {
         <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-muted-foreground">
           <span>Subtotal</span>
           <span className="text-sm font-semibold font-serif text-price">
-            {formatPrice(order.subtotal)}
+            {formatPrice(order.subtotal, { fallback: "-" })}
           </span>
         </div>
       </section>

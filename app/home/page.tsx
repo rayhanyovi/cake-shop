@@ -78,7 +78,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto flex w-full flex-col gap-64 px-6 py-16 lg:flex-row lg:items-center lg:justify-between">
+      <section className="mx-auto flex w-full flex-col xl:gap-64 px-6 py-16 md:flex-row md:items-center xl:justify-between">
         <div className="max-w-xl flex flex-col gap-6 p-16">
           <Image
             src="/union-bakery.png"

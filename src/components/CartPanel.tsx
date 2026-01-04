@@ -44,10 +44,40 @@ import {
   type CheckoutPayload,
 } from "../services/cart";
 import { useAuth } from "../context/AuthContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/src/components/ui/dialog";
+import { Button } from "@/src/components/ui/button";
 import { formatPrice } from "@/src/utils/formatPrice";
 
 type CartPanelProps = {
   onClose?: () => void;
+};
+
+type OrderLine = {
+  id: string;
+  title: string;
+  quantity: number;
+  price: number;
+  note?: string | null;
+  image?: string | null;
+};
+
+type OrderData = {
+  deliveryDate: string;
+  deliveryTime: string;
+  phone: string;
+  lines: OrderLine[];
+  subtotal: number;
+};
+
+type StoredOrder = {
+  data: OrderData;
+  expiresAt: number;
 };
 
 type CartCache = {
@@ -67,6 +97,8 @@ type CartCache = {
 
 const CART_CACHE_KEY = "cartCache";
 const CHECKOUT_PENDING_KEY = "pendingCheckout";
+const ORDER_STORAGE_KEY = "lastOrder";
+const ORDER_TTL_MS = 5 * 60 * 1000;
 
 const buildNote = (attributes: CartLine["attributes"]) => {
   if (!attributes?.length) return null;
@@ -108,8 +140,10 @@ export default function CartPanel({ onClose }: CartPanelProps) {
   const [deliveryPhone, setDeliveryPhone] = useState("");
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [showOrderDialog, setShowOrderDialog] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
+  const orderRedirectTimeoutRef = useRef<number | null>(null);
   const isResumingRef = useRef(false);
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
   const prevPositions = useRef(new Map<string, DOMRect>());
@@ -163,6 +197,9 @@ export default function CartPanel({ onClose }: CartPanelProps) {
       if (toastTimeoutRef.current) {
         window.clearTimeout(toastTimeoutRef.current);
       }
+      if (orderRedirectTimeoutRef.current) {
+        window.clearTimeout(orderRedirectTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -193,6 +230,30 @@ export default function CartPanel({ onClose }: CartPanelProps) {
     [cartId, deliveryDate, deliveryPhone, deliveryTime]
   );
 
+  const buildOrderData = useCallback(
+    (payload: CheckoutPayload): StoredOrder => ({
+      data: {
+        deliveryDate: payload.deliveryDate,
+        deliveryTime: payload.deliveryTime,
+        phone: payload.phone,
+        lines: cartLines.map((line) => ({
+          id: line.id,
+          title:
+            line.merchandise?.product?.title ??
+            line.merchandise?.title ??
+            "Item",
+          quantity: line.quantity,
+          price: Number(line.merchandise?.price?.amount ?? 0),
+          note: buildNote(line.attributes),
+          image: line.merchandise?.image?.url ?? null,
+        })),
+        subtotal: subtotal ?? 0,
+      },
+      expiresAt: Date.now() + ORDER_TTL_MS,
+    }),
+    [cartLines, subtotal]
+  );
+
   const handleCheckout = useCallback(
     async (payload: CheckoutPayload) => {
       if (!payload.cartId) return;
@@ -203,18 +264,28 @@ export default function CartPanel({ onClose }: CartPanelProps) {
           accessToken ?? undefined
         );
         await checkout(payload, accessToken ?? undefined);
+        const storedOrder = buildOrderData(payload);
+        localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(storedOrder));
         localStorage.removeItem(CHECKOUT_PENDING_KEY);
         localStorage.removeItem(CART_CACHE_KEY);
         showToast("Checkout successful");
         setShowDeliveryModal(false);
-        if (onClose) onClose();
+        setShowOrderDialog(true);
+        if (orderRedirectTimeoutRef.current) {
+          window.clearTimeout(orderRedirectTimeoutRef.current);
+        }
+        orderRedirectTimeoutRef.current = window.setTimeout(() => {
+          setShowOrderDialog(false);
+          if (onClose) onClose();
+          router.push("/account/order");
+        }, 1200);
       } catch (error) {
         console.error("Failed to checkout:", error);
       } finally {
         setIsCheckingOut(false);
       }
     },
-    [accessToken, onClose, showToast]
+    [accessToken, buildOrderData, onClose, router, showToast]
   );
 
   useEffect(() => {
@@ -336,6 +407,30 @@ export default function CartPanel({ onClose }: CartPanelProps) {
           {toastMessage}
         </div>
       ) : null}
+      <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
+        <DialogContent className="bg-card text-foreground">
+          <DialogHeader>
+            <DialogTitle>Your order is confirmed.</DialogTitle>
+            <DialogDescription>
+              We are starting on your cakes now. You will be redirected to your
+              order summary shortly.
+            </DialogDescription>
+          </DialogHeader>
+          <Button
+            type="button"
+            onClick={() => {
+              if (orderRedirectTimeoutRef.current) {
+                window.clearTimeout(orderRedirectTimeoutRef.current);
+              }
+              setShowOrderDialog(false);
+              if (onClose) onClose();
+              router.push("/account/order");
+            }}
+          >
+            View order
+          </Button>
+        </DialogContent>
+      </Dialog>
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-lg font-semibold uppercase tracking-[0.2em]">
