@@ -87,11 +87,13 @@ export default function ProductCard({ product, className }: ProductCardProps) {
           </div>
         </div>
 
-        <div className="flex flex-row w-full items-center justify-between">
-          <p className="text-base font-semibold uppercase tracking-[0.12em] text-foreground flex-wrap">
+        <div className="flex flex-row w-full items-start justify-between">
+          <p className="text-xs md:text-base font-semibold uppercase tracking-[0.12em] text-foreground flex-wrap">
             {product.title}
           </p>
-          <span className="text-xl font-serif text-price">{price}</span>
+          <span className="text-base lg:text-xl font-serif text-price">
+            {price}
+          </span>
         </div>
       </article>
     </Link>

@@ -2,7 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { Calendar as CalendarIcon, ShoppingBag } from "lucide-react";
 import {
@@ -31,6 +38,12 @@ import {
   SelectValue,
 } from "@/src/components/ui/select";
 import { Input } from "@/src/components/ui/input";
+import {
+  checkout,
+  updateCartBuyerIdentity,
+  type CheckoutPayload,
+} from "../services/cart";
+import { useAuth } from "../context/AuthContext";
 
 type CartPanelProps = {
   onClose?: () => void;
@@ -52,6 +65,7 @@ type CartCache = {
 };
 
 const CART_CACHE_KEY = "cartCache";
+const CHECKOUT_PENDING_KEY = "pendingCheckout";
 
 const formatPrice = (value?: number | null) => {
   if (value === undefined || value === null) return "-";
@@ -81,6 +95,7 @@ const slugify = (value: string) =>
 
 export default function CartPanel({ onClose }: CartPanelProps) {
   const router = useRouter();
+  const { accessToken, isAuth } = useAuth();
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
   const [subtotal, setSubtotal] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -98,6 +113,10 @@ export default function CartPanel({ onClose }: CartPanelProps) {
   const [deliveryTime, setDeliveryTime] = useState("");
   const [deliveryPhone, setDeliveryPhone] = useState("");
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<number | null>(null);
+  const isResumingRef = useRef(false);
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
   const prevPositions = useRef(new Map<string, DOMRect>());
 
@@ -145,10 +164,90 @@ export default function CartPanel({ onClose }: CartPanelProps) {
     loadCart();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const hasItems = cartLines.length > 0;
   const deliverySlots = useMemo(() => {
     return ["11AM - 2PM", "3PM - 5PM", "6PM - 8PM"];
   }, []);
+
+  const showToast = useCallback((message: string) => {
+    setToastMessage(message);
+    if (toastTimeoutRef.current) {
+      window.clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = window.setTimeout(() => {
+      setToastMessage(null);
+    }, 2500);
+  }, []);
+
+  const buildCheckoutPayload = useCallback(
+    (): CheckoutPayload => ({
+      cartId: cartId ?? "",
+      phone: deliveryPhone,
+      deliveryTime,
+      deliveryDate: deliveryDate
+        ? deliveryDate.toISOString().split("T")[0]
+        : "",
+    }),
+    [cartId, deliveryDate, deliveryPhone, deliveryTime]
+  );
+
+  const handleCheckout = useCallback(
+    async (payload: CheckoutPayload) => {
+      if (!payload.cartId) return;
+      setIsCheckingOut(true);
+      try {
+        await updateCartBuyerIdentity(
+          { cartId: payload.cartId },
+          accessToken ?? undefined
+        );
+        await checkout(payload, accessToken ?? undefined);
+        localStorage.removeItem(CHECKOUT_PENDING_KEY);
+        localStorage.removeItem(CART_CACHE_KEY);
+        showToast("Checkout successful");
+        setShowDeliveryModal(false);
+        if (onClose) onClose();
+      } catch (error) {
+        console.error("Failed to checkout:", error);
+      } finally {
+        setIsCheckingOut(false);
+      }
+    },
+    [accessToken, onClose, showToast]
+  );
+
+  useEffect(() => {
+    if (!isAuth || isResumingRef.current) return;
+    const pending = localStorage.getItem(CHECKOUT_PENDING_KEY);
+    if (!pending) return;
+    try {
+      const parsed = JSON.parse(pending) as {
+        cartId: string;
+        phone: string;
+        deliveryTime: string;
+        deliveryDate: string;
+      };
+      if (!parsed?.cartId) return;
+      isResumingRef.current = true;
+      handleCheckout({
+        cartId: parsed.cartId,
+        phone: parsed.phone ?? "",
+        deliveryTime: parsed.deliveryTime ?? "",
+        deliveryDate: parsed.deliveryDate ?? "",
+      }).finally(() => {
+        isResumingRef.current = false;
+      });
+    } catch {
+      localStorage.removeItem(CHECKOUT_PENDING_KEY);
+    }
+  }, [isAuth, handleCheckout]);
 
   const openEditor = (line: CartLine) => {
     setEditingLine(line);
@@ -238,6 +337,11 @@ export default function CartPanel({ onClose }: CartPanelProps) {
 
   return (
     <section className="min-h-screen w-full bg-transparent px-6 py-8 text-foreground flex flex-col">
+      {toastMessage ? (
+        <div className="fixed right-6 top-6 z-[9999] rounded bg-[#2f3d1a] px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-white animate-in fade-in slide-in-from-top-2 duration-300">
+          {toastMessage}
+        </div>
+      ) : null}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-lg font-semibold uppercase tracking-[0.2em]">
@@ -568,7 +672,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
           <div className="flex h-full flex-col px-6 py-6">
             <button
               type="button"
-              className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground/70"
+              className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground/70 w-fit"
               onClick={() => setShowDeliveryModal(false)}
             >
               Back
@@ -615,7 +719,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
               </div>
 
               {deliveryDate ? (
-                <div className="space-y-2 border-b border-foreground/20 pb-4">
+                <div className="space-y-2 pb-4">
                   <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">
                     Delivery time
                   </label>
@@ -638,7 +742,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
               ) : null}
 
               {deliveryDate && deliveryTime ? (
-                <div className="space-y-2 border-b border-foreground/20 pb-4">
+                <div className="space-y-2 pb-4">
                   <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">
                     Phone number
                   </label>
@@ -666,32 +770,19 @@ export default function CartPanel({ onClose }: CartPanelProps) {
                 disabled={!deliveryPhone}
                 onClick={() => {
                   if (!deliveryPhone) return;
-                  const order = {
-                    deliveryDate: deliveryDate
-                      ? deliveryDate.toISOString().split("T")[0]
-                      : "",
-                    deliveryTime,
-                    phone: deliveryPhone,
-                    lines: cartLines.map((line) => ({
-                      id: line.id,
-                      title:
-                        line.merchandise?.product?.title ??
-                        line.merchandise?.title ??
-                        "Item",
-                      quantity: line.quantity,
-                      price: Number(line.merchandise?.price?.amount ?? "0"),
-                      note: buildNote(line.attributes),
-                      image: line.merchandise?.image?.url ?? null,
-                    })),
-                    subtotal: subtotal ?? 0,
-                  };
-                  localStorage.setItem("lastOrder", JSON.stringify(order));
-                  setShowDeliveryModal(false);
-                  if (onClose) onClose();
-                  router.push("/checkout");
+                  if (!isAuth) {
+                    const pendingPayload = buildCheckoutPayload();
+                    localStorage.setItem(
+                      CHECKOUT_PENDING_KEY,
+                      JSON.stringify(pendingPayload)
+                    );
+                    router.push("/auth/login?ref=/cart");
+                    return;
+                  }
+                  handleCheckout(buildCheckoutPayload());
                 }}
               >
-                Proceed to checkout
+                {isCheckingOut ? "Processing..." : "Proceed to checkout"}
               </button>
             ) : null}
           </div>

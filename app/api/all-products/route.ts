@@ -1,8 +1,8 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 const apiBaseUrl = process.env.API_BASE_URL;
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   if (!apiBaseUrl) {
     return NextResponse.json(
       { success: false, message: "API base URL is not configured." },
