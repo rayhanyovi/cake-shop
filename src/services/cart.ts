@@ -113,28 +113,28 @@ const authHeaders = (accessToken?: string) =>
 
 export const createCart = async (
   payload: CreateCartPayload,
-  accessToken?: string,
+  accessToken?: string
 ) => {
   const response = await apiClient.post<CreateCartResponse>(
     "/api/createCart",
     payload,
     {
       headers: authHeaders(accessToken),
-    },
+    }
   );
   return response.data;
 };
 
 export const addCartLine = async (
   payload: AddCartLinePayload,
-  accessToken?: string,
+  accessToken?: string
 ) => {
   const response = await apiClient.post<AddCartLineResponse>(
     "/api/cart-line-add",
     payload,
     {
       headers: authHeaders(accessToken),
-    },
+    }
   );
   return response.data;
 };
@@ -142,21 +142,21 @@ export const addCartLine = async (
 export const getCart = async (payload: GetCartPayload) => {
   const response = await apiClient.post<GetCartResponse>(
     "/api/get-cart",
-    payload,
+    payload
   );
   return response.data;
 };
 
 export const updateCartBuyerIdentity = async (
   payload: UpdateCartBuyerIdentityPayload,
-  accessToken?: string,
+  accessToken?: string
 ) => {
   const response = await apiClient.post<UpdateCartBuyerIdentityResponse>(
     "/api/update-cart-buyer-identity",
     payload,
     {
       headers: authHeaders(accessToken),
-    },
+    }
   );
   return response.data;
 };
@@ -164,21 +164,21 @@ export const updateCartBuyerIdentity = async (
 export const updateCartLine = async (payload: UpdateCartLinePayload) => {
   const response = await apiClient.post<UpdateCartLineResponse>(
     "/api/update-cart-line",
-    payload,
+    payload
   );
   return response.data;
 };
 
 export const checkout = async (
   payload: CheckoutPayload,
-  accessToken?: string,
+  accessToken?: string
 ) => {
   const response = await apiClient.post<CheckoutResponse>(
     "/api/checkout",
     payload,
     {
       headers: authHeaders(accessToken),
-    },
+    }
   );
   return response.data;
 };
@@ -186,7 +186,7 @@ export const checkout = async (
 export const removeCartItem = async (payload: RemoveCartItemPayload) => {
   const response = await apiClient.post<RemoveCartItemResponse>(
     "/api/remove-cart-item",
-    payload,
+    payload
   );
   return response.data;
 };
