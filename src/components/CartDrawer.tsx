@@ -9,6 +9,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/src/components/ui/sheet";
+import { useCartAnchor } from "@/src/context/CartAnchorContext";
 
 type CartDrawerProps = {
   isLoggedIn: boolean;
@@ -16,6 +17,17 @@ type CartDrawerProps = {
 
 export default function CartDrawer({ isLoggedIn }: CartDrawerProps) {
   const [open, setOpen] = React.useState(false);
+  const buttonRef = React.useRef<HTMLButtonElement | null>(null);
+  const { registerAnchor } = useCartAnchor();
+
+  React.useEffect(() => {
+    const element = buttonRef.current;
+    if (!element) return;
+    registerAnchor(element);
+    return () => {
+      registerAnchor(null);
+    };
+  }, [registerAnchor]);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -23,6 +35,8 @@ export default function CartDrawer({ isLoggedIn }: CartDrawerProps) {
         <button
           type="button"
           className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
+          data-cart-target="true"
+          ref={buttonRef}
           onClick={(event) => {
             if (isLoggedIn) return;
             event.preventDefault();

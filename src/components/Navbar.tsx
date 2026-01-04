@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/src/context/AuthContext";
+import { useCartAnchor } from "@/src/context/CartAnchorContext";
 import CartDrawer from "@/src/components/CartDrawer";
 
 export default function Navbar() {
@@ -14,6 +15,10 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const { isAuth: isLoggedIn } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
+  const [showCartTooltip, setShowCartTooltip] = useState(false);
+  const tooltipTimeoutRef = useRef<number | null>(null);
+  const cartLinkRef = useRef<HTMLAnchorElement | null>(null);
+  const { registerAnchor } = useCartAnchor();
   const showBreadcrumb = pathname.startsWith("/product/") && !isAuth;
   const logoSrc = isAuth ? "/union-bakery.png" : "/union-bakery-white.png";
   const breadcrumbSlug = showBreadcrumb
@@ -46,6 +51,43 @@ export default function Navbar() {
       media.removeEventListener("change", update);
     };
   }, [isHome]);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const element = cartLinkRef.current;
+    if (!element) return;
+    registerAnchor(element);
+    return () => {
+      registerAnchor(null);
+    };
+  }, [isMobile, registerAnchor]);
+
+  useEffect(() => {
+    const handleAdded = () => {
+      setShowCartTooltip(true);
+      if (tooltipTimeoutRef.current) {
+        window.clearTimeout(tooltipTimeoutRef.current);
+      }
+      tooltipTimeoutRef.current = window.setTimeout(
+        () => setShowCartTooltip(false),
+        2000
+      );
+    };
+
+    window.addEventListener("cart:added", handleAdded);
+    return () => {
+      window.removeEventListener("cart:added", handleAdded);
+      if (tooltipTimeoutRef.current) {
+        window.clearTimeout(tooltipTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const cartTooltip = showCartTooltip ? (
+    <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 rounded bg-[#2f3d1a] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white animate-in fade-in slide-in-from-top-2 duration-300">
+      Added to cart
+    </div>
+  ) : null;
 
   return (
     <header
@@ -113,14 +155,22 @@ export default function Navbar() {
             </Link>
             <>•</>
             {isMobile ? (
-              <Link
-                href={isLoggedIn ? "/cart" : "/auth/login"}
-                className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
-              >
-                Cart
-              </Link>
+              <span className="relative">
+                {cartTooltip}
+                <Link
+                  href={isLoggedIn ? "/cart" : "/auth/login"}
+                  data-cart-target="true"
+                  ref={cartLinkRef}
+                  className="transition duration-200 hover:text-primary-foreground/75 uppercase t"
+                >
+                  Cart
+                </Link>
+              </span>
             ) : (
-              <CartDrawer isLoggedIn={isLoggedIn} />
+              <span className="relative">
+                {cartTooltip}
+                <CartDrawer isLoggedIn={isLoggedIn} />
+              </span>
             )}
 
             <Link
