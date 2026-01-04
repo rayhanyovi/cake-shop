@@ -10,6 +10,7 @@ import {
 } from "../services/cart";
 import { useAuth } from "../context/AuthContext";
 import AddToCartFlyer from "@/src/components/AddToCartFlyer";
+import Ribbon from "./Ribbon";
 
 type ProductDetailPanelProps = {
   product: ProductDetail;
