@@ -389,7 +389,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
             );
           })
         ) : (
-          <div className="rounded-sm border border-foreground/20 bg-white/50 p-6 text-center">
+          <div className="p-6 text-center mt-20">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-foreground/20 text-foreground/60">
               <ShoppingBag className="h-7 w-7" />
             </div>
