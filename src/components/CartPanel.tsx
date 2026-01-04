@@ -237,7 +237,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
   }, [cartLines]);
 
   return (
-    <section className="min-h-screen w-full bg-[#c9c7c2]/95 px-6 py-8 text-foreground flex flex-col">
+    <section className="min-h-screen w-full bg-transparent px-6 py-8 text-foreground flex flex-col">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-lg font-semibold uppercase tracking-[0.2em]">
@@ -247,16 +247,6 @@ export default function CartPanel({ onClose }: CartPanelProps) {
             *All prices shown are in thousands of rupiah
           </p>
         </div>
-        {onClose ? (
-          <button
-            type="button"
-            className="text-lg font-semibold text-foreground/70"
-            aria-label="Close cart"
-            onClick={onClose}
-          >
-            ×
-          </button>
-        ) : null}
       </div>
 
       <div className="mt-6 flex-1 space-y-6 overflow-y-auto">
