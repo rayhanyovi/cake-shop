@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ProductDetail } from "../services/product";
 import {
   addCartLine,
@@ -9,6 +9,7 @@ import {
   type CartLine,
 } from "../services/cart";
 import { useAuth } from "../context/AuthContext";
+import AddToCartFlyer from "@/src/components/AddToCartFlyer";
 
 type ProductDetailPanelProps = {
   product: ProductDetail;
@@ -43,10 +44,14 @@ export default function ProductDetailPanel({
   const [greetingText, setGreetingText] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showAddedTooltip, setShowAddedTooltip] = useState(false);
   const [quantityPulse, setQuantityPulse] = useState(false);
   const [cartMatches, setCartMatches] = useState<CartLine[]>([]);
   const [isCartChecking, setIsCartChecking] = useState(false);
+  const addButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [flySequence, setFlySequence] = useState(0);
+  const handleFlyArrive = useCallback(() => {
+    window.dispatchEvent(new CustomEvent("cart:added"));
+  }, []);
 
   const selectedVariant = useMemo(
     () => variants.find((variant) => variant.id === selectedVariantId) ?? null,
@@ -136,8 +141,7 @@ export default function ProductDetailPanel({
         );
         setCartMatches(matches);
       }
-      setShowAddedTooltip(true);
-      window.setTimeout(() => setShowAddedTooltip(false), 2000);
+      setFlySequence((value) => value + 1);
     } catch (error) {
       console.error("Failed to add to cart:", error);
     } finally {
@@ -330,21 +334,22 @@ export default function ProductDetailPanel({
           </div>
         </div>
         <div className="relative">
-          {showAddedTooltip ? (
-            <div className="absolute -top-8 right-0 rounded bg-[#2f3d1a] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white animate-in fade-in slide-in-from-bottom-2 duration-300">
-              Added to cart
-            </div>
-          ) : null}
           <button
             type="button"
             onClick={handleAddToCart}
             disabled={!selectedVariant?.availableForSale || isSubmitting}
+            ref={addButtonRef}
             className="bg-[#556B2F] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? "Adding..." : "Add to cart"}
           </button>
         </div>
       </div>
+      <AddToCartFlyer
+        trigger={flySequence}
+        startRef={addButtonRef}
+        onArrive={handleFlyArrive}
+      />
     </div>
   );
 }
