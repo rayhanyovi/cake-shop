@@ -1,5 +1,5 @@
 import ProductCard from "@/src/components/ProductCard";
-import { getAllProductsCached } from "@/src/services/product";
+import { getAllProductsCached, ProductListItem } from "@/src/services/product";
 
 export default async function ShopAllPage() {
   let products: ProductListItem[] | [] = [];

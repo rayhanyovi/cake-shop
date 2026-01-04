@@ -49,7 +49,9 @@ export async function POST(request: NextRequest) {
       : null;
 
   if (token) {
-    const cookieOptions: Parameters<typeof nextResponse.cookies.set>[1] = {
+    const cookieOptions: NonNullable<
+      Parameters<typeof nextResponse.cookies.set>[2]
+    > = {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",

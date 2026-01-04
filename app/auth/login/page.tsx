@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -20,7 +20,7 @@ const mapFieldErrors = (errors: { error: string; message: string }[]) =>
     return acc;
   }, {});
 
-export default function LoginPage() {
+function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -197,5 +197,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[60vh]" />}>
+      <LoginFormContent />
+    </Suspense>
   );
 }
