@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Ribbon from "./Ribbon";
 import { getBadgeLabels } from "../utils/getBadgeLabels";
+import { formatPrice } from "../utils/formatPrice";
 
 export type ProductCardMedia = {
   id: string;
@@ -35,17 +36,6 @@ type ProductCardProps = {
   className?: string;
 };
 
-const formatPrice = (amount: string, currencyCode?: string | null) => {
-  const numeric = Number(amount);
-  const formatted = Number.isFinite(numeric)
-    ? new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(
-        numeric
-      )
-    : amount;
-
-  return currencyCode ? `${currencyCode} ${formatted}` : formatted;
-};
-
 const slugify = (value: string) =>
   value
     .toLowerCase()
@@ -59,11 +49,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
   const imageUrl = media?.url ?? "/file.svg";
   const imageAlt = media?.altText ?? product.title;
   const slug = product.handle?.trim() ? product.handle : slugify(product.title);
-  const price = formatPrice(
-    (
-      Number(product.priceRange?.maxVariantPrice?.amount ?? "0") / 1000
-    ).toString()
-  );
+  const price = formatPrice(product.priceRange?.maxVariantPrice?.amount ?? "0");
 
   return (
     <Link href={`/product/${slug}`} className="group block">

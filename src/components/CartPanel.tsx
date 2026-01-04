@@ -44,6 +44,7 @@ import {
   type CheckoutPayload,
 } from "../services/cart";
 import { useAuth } from "../context/AuthContext";
+import { formatPrice } from "@/src/utils/formatPrice";
 
 type CartPanelProps = {
   onClose?: () => void;
@@ -66,13 +67,6 @@ type CartCache = {
 
 const CART_CACHE_KEY = "cartCache";
 const CHECKOUT_PENDING_KEY = "pendingCheckout";
-
-const formatPrice = (value?: number | null) => {
-  if (value === undefined || value === null) return "-";
-  return new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(
-    value
-  );
-};
 
 const buildNote = (attributes: CartLine["attributes"]) => {
   if (!attributes?.length) return null;
@@ -453,7 +447,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
                         ) : null}
                       </div>
                       <span className="text-[16px] font-serif font-normal uppercase leading-5 text-price">
-                        {formatPrice(amount)}
+                        {formatPrice(amount, { fallback: "-" })}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-foreground/70">
@@ -507,7 +501,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
         <div className="flex items-center justify-between">
           <span>Subtotal</span>
           <span className="text-sm font-semibold font-serif text-price">
-            {formatPrice(subtotal)}
+            {formatPrice(subtotal, { fallback: "-" })}
           </span>
         </div>
         {hasItems ? (
@@ -639,7 +633,8 @@ export default function CartPanel({ onClose }: CartPanelProps) {
               <span className="text-sm font-semibold font-serif text-price">
                 {formatPrice(
                   Number(editingLine?.merchandise?.price?.amount ?? 0) *
-                    editQuantity
+                    editQuantity,
+                  { fallback: "-" }
                 )}
               </span>
             </div>
@@ -660,10 +655,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
         open={showDeliveryModal}
         onOpenChange={(nextOpen) => setShowDeliveryModal(nextOpen)}
       >
-        <SheetContent
-          side="right"
-          className="bg-[#c9c7c2]/98 p-0 text-foreground"
-        >
+        <SheetContent side="right" className=" p-0 text-foreground">
           <SheetTitle className="sr-only">Delivery details</SheetTitle>
           <SheetDescription className="sr-only">
             Choose delivery date, time, and phone number.

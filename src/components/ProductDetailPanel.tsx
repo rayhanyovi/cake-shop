@@ -10,20 +10,10 @@ import {
 } from "../services/cart";
 import { useAuth } from "../context/AuthContext";
 import AddToCartFlyer from "@/src/components/AddToCartFlyer";
-import Ribbon from "./Ribbon";
+import { formatPrice } from "@/src/utils/formatPrice";
 
 type ProductDetailPanelProps = {
   product: ProductDetail;
-};
-
-const formatPrice = (amount?: number) => {
-  if (amount === undefined || amount === null) return "";
-  const formatted = Number.isFinite(amount)
-    ? new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(
-        amount
-      )
-    : String(amount);
-  return formatted;
 };
 
 const getInitialVariantId = (variants: ProductDetail["variants"]["nodes"]) => {
@@ -78,7 +68,7 @@ export default function ProductDetailPanel({
   }, [hasSizeOption, variants]);
 
   const unitAmount = selectedVariant?.price?.amount
-    ? Number(selectedVariant.price.amount) / 1000
+    ? Number(selectedVariant.price.amount)
     : null;
   const totalAmount =
     unitAmount !== null && Number.isFinite(unitAmount)
@@ -328,7 +318,7 @@ export default function ProductDetailPanel({
         </div>
       ) : null}
 
-      <div className="sticky bottom-0 mt-auto flex items-center justify-between border border-foreground bg-background px-6 py-4 text-xs uppercase tracking-[0.2em]">
+      <div className="sticky bottom-0 mt-auto flex w-screen -mx-8 items-center justify-between border border-foreground bg-background px-6 py-4 text-xs uppercase tracking-[0.2em] md:w-full md:mx-0">
         <div className="space-y-2">
           <p className="font-semibold">Quantity</p>
           <div className="flex items-center gap-4 text-sm">
