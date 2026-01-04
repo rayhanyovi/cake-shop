@@ -1,9 +1,18 @@
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
-const baseURL =
+const normalizeAppUrl = (value: string) =>
+  value.startsWith("http://") || value.startsWith("https://")
+    ? value
+    : `https://${value}`;
+
+const resolveServerBaseUrl = () =>
   process.env.NEXT_PUBLIC_APP_URL ??
   process.env.APP_URL ??
+  (process.env.VERCEL_URL ? normalizeAppUrl(process.env.VERCEL_URL) : null) ??
   "http://localhost:3000";
+
+const baseURL =
+  typeof window === "undefined" ? resolveServerBaseUrl() : "";
 
 export type ApiErrorItem = {
   error: string;
