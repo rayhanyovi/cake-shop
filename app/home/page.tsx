@@ -1,68 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import ProductCard from "@/src/components/ProductCard";
+import { getAllProductsCached } from "@/src/services/product";
 
-const products = [
-  {
-    id: "gid://shopify/Product/10273927364882",
-    title: "Donuts",
-    handle: "donuts",
-    priceRange: {
-      maxVariantPrice: { amount: "100000.0", currencyCode: "IDR" },
-    },
-    media: {
-      nodes: [
-        {
-          id: "gid://shopify/MediaImage/45116559524114",
-          previewImage: {
-            url: "https://cdn.shopify.com/s/files/1/0745/6371/5346/files/REDVELVETCAKE.jpg?v=1766363478",
-            altText: "",
-          },
-        },
-      ],
-    },
-  },
-  {
-    id: "gid://shopify/Product/10273927397650",
-    title: "Red Velvet Christmas Edition",
-    handle: "red-velvet-christmas-edition",
-    priceRange: {
-      maxVariantPrice: { amount: "850000.0", currencyCode: "IDR" },
-    },
-    media: {
-      nodes: [
-        {
-          id: "gid://shopify/MediaImage/45116559687954",
-          previewImage: {
-            url: "https://cdn.shopify.com/s/files/1/0745/6371/5346/files/REDVELVETCHRISTMASEDITION.jpg?v=1766363479",
-            altText: "",
-          },
-        },
-      ],
-    },
-  },
-  {
-    id: "gid://shopify/Product/10273927201042",
-    title: "Nutella Ferrero Cake",
-    handle: "nutella-ferrero",
-    priceRange: {
-      maxVariantPrice: { amount: "760000.0", currencyCode: "IDR" },
-    },
-    media: {
-      nodes: [
-        {
-          id: "gid://shopify/MediaImage/45116558934290",
-          previewImage: {
-            url: "https://cdn.shopify.com/s/files/1/0745/6371/5346/files/NutellaFerreroCake.jpg?v=1766363468",
-            altText: "",
-          },
-        },
-      ],
-    },
-  },
-];
+export default async function HomePage() {
+  let products = [];
 
-export default function HomePage() {
+  try {
+    const response = await getAllProductsCached();
+    products = Array.isArray(response.data) ? response.data.slice(0, 4) : [];
+  } catch (error) {
+    console.error("Failed to load home products:", error);
+  }
+
   return (
     <main className="flex w-full flex-col -mt-18.25">
       <section className="relative min-h-screen w-full overflow-hidden">
