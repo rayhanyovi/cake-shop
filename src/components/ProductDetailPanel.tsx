@@ -10,6 +10,7 @@ import {
 } from "../services/cart";
 import { useAuth } from "../context/AuthContext";
 import AddToCartFlyer from "@/src/components/AddToCartFlyer";
+import Ribbon from "./Ribbon";
 
 type ProductDetailPanelProps = {
   product: ProductDetail;
@@ -57,6 +58,21 @@ export default function ProductDetailPanel({
     () => variants.find((variant) => variant.id === selectedVariantId) ?? null,
     [selectedVariantId, variants]
   );
+  const hasSizeOption = useMemo(
+    () =>
+      product.options?.some(
+        (option) => option.name?.toLowerCase() === "size"
+      ) ?? false,
+    [product.options]
+  );
+  const sizeVariants = useMemo(() => {
+    if (!hasSizeOption) return [];
+    return variants.filter((variant) =>
+      variant.selectedOptions?.some(
+        (option) => option.name?.toLowerCase() === "size"
+      )
+    );
+  }, [hasSizeOption, variants]);
 
   const unitAmount = selectedVariant?.price?.amount
     ? Number(selectedVariant.price.amount) / 1000
@@ -152,63 +168,69 @@ export default function ProductDetailPanel({
 
   return (
     <div className="flex w-full flex-col gap-6 p-8 text-foreground">
-      <div className="flex items-start justify-between gap-6">
-        <h1 className="text-lg font-semibold uppercase tracking-[0.18em]">
-          {product.title}
-        </h1>
-        <span className="text-lg font-semibold font-serif text-price">
-          {price}
-        </span>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-start justify-between gap-6">
+          <h1 className="text-2xl font-bold uppercase">{product.title}</h1>
+          <span className="text-3xl font-serif text-price">{price}</span>
+        </div>
+        <p className="text-sm text-foreground/70">{product.description}</p>
       </div>
-      <p className="text-sm text-foreground/70">{product.description}</p>
       <div className="h-px w-full bg-foreground/20" />
 
-      <div className="space-y-3 text-xs uppercase tracking-[0.2em] text-foreground/80">
-        <p className="font-semibold">Cake size</p>
-        <div className=" grid grid-cols-2 md:grid-cols-4 mb-5 gap-3">
-          {variants.length > 0 ? (
-            variants.map((variant) => {
-              const label =
-                variant.selectedOptions?.[0]?.value ?? variant.title;
-              const isAvailable = variant.availableForSale;
-              const isSelected = variant.id === selectedVariantId;
+      {hasSizeOption ? (
+        <div className="space-y-3 uppercase text-foreground/80">
+          <p className="font-semibold">Cake size</p>
+          <div className=" grid grid-cols-2 md:grid-cols-4 gap-3">
+            {sizeVariants.length > 0 ? (
+              sizeVariants.map((variant) => {
+                const sizeOption = variant.selectedOptions?.find(
+                  (option) => option.name?.toLowerCase() === "size"
+                );
+                const label = sizeOption?.value ?? variant.title;
+                const isAvailable = variant.availableForSale;
+                const isSelected = variant.id === selectedVariantId;
 
-              return (
-                <button
-                  key={variant.id}
-                  type="button"
-                  disabled={!isAvailable}
-                  onClick={() =>
-                    isAvailable ? setSelectedVariantId(variant.id) : null
-                  }
-                  className={[
-                    "flex flex-col items-center justify-center border px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] transition",
-                    isAvailable
-                      ? "border-foreground/50 text-foreground"
-                      : "cursor-not-allowed border-foreground/20 text-foreground/40 line-through",
-                    isSelected && isAvailable
-                      ? "bg-foreground/5"
-                      : "bg-transparent",
-                  ].join(" ")}
-                >
-                  <span className="font-serif text-price">{label}</span>
-                  <span>cm</span>
-                </button>
-              );
-            })
-          ) : (
-            <div className="col-span-2 text-[11px] uppercase tracking-[0.2em] text-foreground/60">
-              No size options
-            </div>
-          )}
+                return (
+                  <button
+                    key={variant.id}
+                    type="button"
+                    disabled={!isAvailable}
+                    onClick={() =>
+                      isAvailable ? setSelectedVariantId(variant.id) : null
+                    }
+                    className={[
+                      "flex flex-col items-center justify-center border px-6 py-4 text-sm  font-semibold uppercasex transition",
+                      isAvailable
+                        ? "border-foreground/50 text-foreground"
+                        : "cursor-not-allowed border-foreground/20 text-foreground/40 line-through",
+                      isSelected && isAvailable
+                        ? "bg-foreground/5"
+                        : "bg-transparent",
+                    ].join(" ")}
+                  >
+                    <span className="font-serif text-price text-2xl">
+                      {label}
+                    </span>
+                    <span>cm</span>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="col-span-2 text-[11px] uppercase  text-foreground/60">
+                No size options
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      ) : null}
 
-      <div className="space-y-3 text-xs uppercase tracking-[0.2em] text-foreground/80">
+      <div className="h-px w-full bg-foreground/20" />
+
+      <div className="space-y-3 uppercase text-foreground/80">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex flex-col gap-1">
             <p className="font-semibold">Add cake wording</p>
-            <p className="text-[11px] normal-case text-foreground/60">
+            <p className="text-sm normal-case text-foreground/60">
               Optional · max. 50 characters
             </p>
           </div>
@@ -226,15 +248,15 @@ export default function ProductDetailPanel({
             onChange={(event) => setWordingText(event.target.value)}
             maxLength={50}
             rows={2}
-            className="w-full resize-none border border-foreground/30 bg-white p-2 text-xs normal-case tracking-normal text-foreground/80 focus:border-foreground/60 focus:outline-none"
+            className="w-full resize-none border border-foreground/30 bg-white p-2 text-sm normal-case tracking-normal text-foreground/80 focus:border-foreground/60 focus:outline-none"
             placeholder="Add your cake wording..."
           />
         ) : null}
         <div className="h-px w-full bg-foreground/20" />
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex flex-col gap-1">
             <p className="font-semibold">Add greeting card</p>
-            <p className="text-[11px] normal-case text-foreground/60">
+            <p className="text-sm normal-case text-foreground/60">
               Optional · max. 100 characters
             </p>
           </div>
@@ -252,7 +274,7 @@ export default function ProductDetailPanel({
             onChange={(event) => setGreetingText(event.target.value)}
             maxLength={100}
             rows={3}
-            className="w-full resize-none border border-foreground/30 bg-white p-2 text-xs normal-case tracking-normal text-foreground/80 focus:border-foreground/60 focus:outline-none"
+            className="w-full resize-none border border-foreground/30 bg-white p-2 text-sm normal-case tracking-normal text-foreground/80 focus:border-foreground/60 focus:outline-none"
             placeholder="Add your greeting card message..."
           />
         ) : null}
@@ -260,11 +282,11 @@ export default function ProductDetailPanel({
 
       <div className="h-px w-full bg-foreground/20" />
 
-      <div className="space-y-3 text-xs text-foreground/70">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em]">
+      <div className="space-y-3 text-foreground/70">
+        <p className="text-base font-semibold uppercase">
           Terms &amp; conditions
         </p>
-        <ul className="list-disc space-y-1 pl-4 text-[11px] leading-relaxed">
+        <ul className="list-disc space-y-1 pl-4 text-sm leading-relaxed">
           <li>Preparation may take up to 2 hours before dispatch.</li>
           <li>Minimum purchase of IDR 350,000 is required for delivery.</li>
           <li>Delivery available with a flat fare for select areas.</li>
@@ -275,11 +297,11 @@ export default function ProductDetailPanel({
       </div>
 
       {cartMatches.length > 0 ? (
-        <div className="border border-foreground/20 bg-[#f3f1ec] px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-foreground/70">
+        <div className="border border-foreground/20 bg-[#f3f1ec] px-4 py-3 text-xs uppercase text-foreground/70">
           <p className="font-semibold text-foreground/80">
             You already have this product on your cart with these details:
           </p>
-          <ul className="mt-2 space-y-1">
+          <ul className="mt-2 space-y-1 pl-4">
             {cartMatches.map((line) => {
               const cakeWording = getAttributeValue(
                 line.attributes,
@@ -287,8 +309,8 @@ export default function ProductDetailPanel({
               );
               const greeting = getAttributeValue(line.attributes, "Greetings");
               return (
-                <li key={line.id}>
-                  {line.merchandise?.title ?? "Variant"} · Qty{" "}
+                <li key={line.id} className="list-disc">
+                  {`${line.merchandise?.title ?? "Variant"} cm`} · Qty{" "}
                   <span className="font-serif">{line.quantity}</span>
                   {cakeWording ? ` · Cake: ${cakeWording}` : ""}
                   {greeting ? ` · Greeting: ${greeting}` : ""}
