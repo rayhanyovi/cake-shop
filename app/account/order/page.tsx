@@ -44,29 +44,27 @@ const formatPrice = (value?: number | null) => {
 
 export default function OrderPage() {
   const { accessToken } = useAuth();
-  const [order, setOrder] = useState<OrderData | null>(null);
-  const [checkoutInfo, setCheckoutInfo] = useState<CheckoutInfo | null>(null);
-  const [customer, setCustomer] = useState<CustomerProfile | null>(null);
-
-  useEffect(() => {
+  const [order] = useState<OrderData | null>(() => {
+    if (typeof window === "undefined") return null;
     const stored = localStorage.getItem("lastOrder");
-    if (!stored) return;
+    if (!stored) return null;
     try {
-      setOrder(JSON.parse(stored));
+      return JSON.parse(stored) as OrderData;
     } catch {
-      setOrder(null);
+      return null;
     }
-  }, []);
-
-  useEffect(() => {
+  });
+  const [checkoutInfo] = useState<CheckoutInfo | null>(() => {
+    if (typeof window === "undefined") return null;
     const stored = localStorage.getItem("checkoutInfo");
-    if (!stored) return;
+    if (!stored) return null;
     try {
-      setCheckoutInfo(JSON.parse(stored));
+      return JSON.parse(stored) as CheckoutInfo;
     } catch {
-      setCheckoutInfo(null);
+      return null;
     }
-  }, []);
+  });
+  const [customer, setCustomer] = useState<CustomerProfile | null>(null);
 
   useEffect(() => {
     if (!accessToken) return;

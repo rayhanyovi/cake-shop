@@ -32,6 +32,7 @@ export default function Navbar() {
   const breadcrumbLabel = breadcrumbSlug
     .replace(/-/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
+  const showScrolled = isHome && isScrolled;
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
@@ -39,17 +40,14 @@ export default function Navbar() {
     update();
     media.addEventListener("change", update);
 
-    if (!isHome) {
-      setIsScrolled(false);
-      return () => media.removeEventListener("change", update);
-    }
-
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
 
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    if (isHome) {
+      handleScroll();
+      window.addEventListener("scroll", handleScroll, { passive: true });
+    }
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
@@ -58,7 +56,7 @@ export default function Navbar() {
   }, [isHome]);
 
   const cartTooltip = showCartTooltip ? (
-    <div className="w-fit absolute left-1/2 top-full mt-3 -translate-x-1/2 whitespace-nowrap rounded  bg-[#F4F3EF] px-4 py-4 text-[10px] uppercase text-white animate-in fade-in slide-in-from-top-2 duration-300">
+    <div className="w-fit absolute left-1/2 top-full mt-3 -translate-x-1/2 whitespace-nowrap rounded  bg-[#F4F3EF] px-4 py-4 text-[10px] uppercase text-foreground animate-in fade-in slide-in-from-top-2 duration-300">
       Added to cart
     </div>
   ) : null;
@@ -147,7 +145,7 @@ export default function Navbar() {
           <div
             className={[
               "absolute inset-0 bg-primary transition-transform duration-500 ease-out will-change-transform pointer-events-none",
-              isScrolled ? "translate-y-0" : "-translate-y-full",
+              showScrolled ? "translate-y-0" : "-translate-y-full",
             ].join(" ")}
             aria-hidden="true"
           />

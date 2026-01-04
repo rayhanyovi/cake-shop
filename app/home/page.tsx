@@ -1,10 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import ProductCard from "@/src/components/ProductCard";
-import { getAllProductsCached } from "@/src/services/product";
+import { getAllProductsCached, ProductListItem } from "@/src/services/product";
 
 export default async function HomePage() {
-  let products = [];
+  let products: ProductListItem[] | [] = [];
 
   try {
     const response = await getAllProductsCached();
@@ -50,7 +50,7 @@ export default async function HomePage() {
             Shop now
           </Link>
         </div>
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
@@ -91,7 +91,7 @@ export default async function HomePage() {
               Group Order
             </h2>
             <p className="text-sm font-medium leading-5 text-muted-foreground">
-              Whether you're treating clients or celebrating a company
+              Whether you&apos;re treating clients or celebrating a company
               milestone, our cakes are sure to impress. We offer a variety of
               sizes to suit any occasion.
             </p>

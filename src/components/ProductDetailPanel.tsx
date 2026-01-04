@@ -10,7 +10,6 @@ import {
 } from "../services/cart";
 import { useAuth } from "../context/AuthContext";
 import AddToCartFlyer from "@/src/components/AddToCartFlyer";
-import Ribbon from "./Ribbon";
 
 type ProductDetailPanelProps = {
   product: ProductDetail;
@@ -35,7 +34,10 @@ export default function ProductDetailPanel({
   product,
 }: ProductDetailPanelProps) {
   const { accessToken } = useAuth();
-  const variants = product.variants?.nodes ?? [];
+  const variants = useMemo(
+    () => product.variants?.nodes ?? [],
+    [product.variants]
+  );
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
     () => getInitialVariantId(variants)
   );
@@ -199,10 +201,10 @@ export default function ProductDetailPanel({
                       isAvailable ? setSelectedVariantId(variant.id) : null
                     }
                     className={[
-                      "flex flex-col items-center justify-center border px-6 py-4 text-sm  font-semibold uppercasex transition",
+                      "flex flex-col items-center justify-center  px-6 py-4 text-sm  font-semibold uppercasex transition",
                       isAvailable
-                        ? "border-foreground/50 text-foreground"
-                        : "cursor-not-allowed border-foreground/20 text-foreground/40 line-through",
+                        ? "border-foreground/50 text-foreground border-2"
+                        : "cursor-not-allowed border-foreground/20 text-foreground/40 grayscale border opacity-75",
                       isSelected && isAvailable
                         ? "bg-foreground/5"
                         : "bg-transparent",

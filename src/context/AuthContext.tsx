@@ -34,8 +34,7 @@ const isTokenValid = (expiresAt: string | null) => {
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [auth, setAuthState] = useState<AuthPayload | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -43,9 +42,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const parsed = JSON.parse(stored) as AuthPayload;
-      if (parsed?.accessToken && parsed?.expiresAt && isTokenValid(parsed.expiresAt)) {
-        setAccessToken(parsed.accessToken);
-        setExpiresAt(parsed.expiresAt);
+      if (
+        parsed?.accessToken &&
+        parsed?.expiresAt &&
+        isTokenValid(parsed.expiresAt)
+      ) {
+        setAuthState(parsed);
       } else {
         localStorage.removeItem(STORAGE_KEY);
       }
@@ -55,26 +57,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setAuth = useCallback((payload: AuthPayload) => {
-    setAccessToken(payload.accessToken);
-    setExpiresAt(payload.expiresAt);
+    setAuthState(payload);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, []);
 
   const clearAuth = useCallback(() => {
-    setAccessToken(null);
-    setExpiresAt(null);
+    setAuthState(null);
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      accessToken,
-      expiresAt,
-      isAuth: isTokenValid(expiresAt),
+      accessToken: auth?.accessToken ?? null,
+      expiresAt: auth?.expiresAt ?? null,
+      isAuth: isTokenValid(auth?.expiresAt ?? null),
       setAuth,
       clearAuth,
     }),
-    [accessToken, expiresAt, setAuth, clearAuth],
+    [auth, setAuth, clearAuth],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -63,7 +63,7 @@ export default function Footer() {
 
         <div className="border-t border-background/15 pt-4 text-xs text-background/60">
           © 2024 The Union Group. All rights reserved. Site by Rayhan Yovi, made
-          for Antikode's technical test.
+          for Antikode&apos;s technical test.
         </div>
       </div>
     </footer>

@@ -2,7 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { Calendar as CalendarIcon, ShoppingBag } from "lucide-react";
 import {
@@ -170,7 +177,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
     return ["11AM - 2PM", "3PM - 5PM", "6PM - 8PM"];
   }, []);
 
-  const showToast = (message: string) => {
+  const showToast = useCallback((message: string) => {
     setToastMessage(message);
     if (toastTimeoutRef.current) {
       window.clearTimeout(toastTimeoutRef.current);
@@ -178,37 +185,43 @@ export default function CartPanel({ onClose }: CartPanelProps) {
     toastTimeoutRef.current = window.setTimeout(() => {
       setToastMessage(null);
     }, 2500);
-  };
+  }, []);
 
-  const buildCheckoutPayload = (): CheckoutPayload => ({
-    cartId: cartId ?? "",
-    phone: deliveryPhone,
-    deliveryTime,
-    deliveryDate: deliveryDate
-      ? deliveryDate.toISOString().split("T")[0]
-      : "",
-  });
+  const buildCheckoutPayload = useCallback(
+    (): CheckoutPayload => ({
+      cartId: cartId ?? "",
+      phone: deliveryPhone,
+      deliveryTime,
+      deliveryDate: deliveryDate
+        ? deliveryDate.toISOString().split("T")[0]
+        : "",
+    }),
+    [cartId, deliveryDate, deliveryPhone, deliveryTime]
+  );
 
-  const handleCheckout = async (payload: CheckoutPayload) => {
-    if (!payload.cartId) return;
-    setIsCheckingOut(true);
-    try {
-      await updateCartBuyerIdentity(
-        { cartId: payload.cartId },
-        accessToken ?? undefined
-      );
-      await checkout(payload, accessToken ?? undefined);
-      localStorage.removeItem(CHECKOUT_PENDING_KEY);
-      localStorage.removeItem(CART_CACHE_KEY);
-      showToast("Checkout successful");
-      setShowDeliveryModal(false);
-      if (onClose) onClose();
-    } catch (error) {
-      console.error("Failed to checkout:", error);
-    } finally {
-      setIsCheckingOut(false);
-    }
-  };
+  const handleCheckout = useCallback(
+    async (payload: CheckoutPayload) => {
+      if (!payload.cartId) return;
+      setIsCheckingOut(true);
+      try {
+        await updateCartBuyerIdentity(
+          { cartId: payload.cartId },
+          accessToken ?? undefined
+        );
+        await checkout(payload, accessToken ?? undefined);
+        localStorage.removeItem(CHECKOUT_PENDING_KEY);
+        localStorage.removeItem(CART_CACHE_KEY);
+        showToast("Checkout successful");
+        setShowDeliveryModal(false);
+        if (onClose) onClose();
+      } catch (error) {
+        console.error("Failed to checkout:", error);
+      } finally {
+        setIsCheckingOut(false);
+      }
+    },
+    [accessToken, onClose, showToast]
+  );
 
   useEffect(() => {
     if (!isAuth || isResumingRef.current) return;
@@ -234,7 +247,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
     } catch {
       localStorage.removeItem(CHECKOUT_PENDING_KEY);
     }
-  }, [isAuth]);
+  }, [isAuth, handleCheckout]);
 
   const openEditor = (line: CartLine) => {
     setEditingLine(line);
@@ -659,7 +672,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
           <div className="flex h-full flex-col px-6 py-6">
             <button
               type="button"
-              className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground/70"
+              className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground/70 w-fit"
               onClick={() => setShowDeliveryModal(false)}
             >
               Back
@@ -706,7 +719,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
               </div>
 
               {deliveryDate ? (
-                <div className="space-y-2 border-b border-foreground/20 pb-4">
+                <div className="space-y-2 pb-4">
                   <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">
                     Delivery time
                   </label>
@@ -729,7 +742,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
               ) : null}
 
               {deliveryDate && deliveryTime ? (
-                <div className="space-y-2 border-b border-foreground/20 pb-4">
+                <div className="space-y-2 pb-4">
                   <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">
                     Phone number
                   </label>
