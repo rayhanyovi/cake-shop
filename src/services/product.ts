@@ -74,10 +74,7 @@ export type ProductDetail = {
 
 export const getAllProducts = async () => {
   const response = await apiClient.get<ApiSuccess<ProductListItem[]>>(
-    "/api/all-products",
-    {
-      baseURL: "",
-    }
+    "/api/all-products"
   );
   return response.data;
 };
@@ -130,10 +127,7 @@ export const getProductFlagsFromCache = async (slug: string) => {
 
 export const getProductDetail = async (slug: string) => {
   const response = await apiClient.get<ApiSuccess<ProductDetail>>(
-    `/api/product/${encodeURIComponent(slug)}`,
-    {
-      baseURL: "",
-    }
+    `/api/product/${encodeURIComponent(slug)}`
   );
   return response.data;
 };
