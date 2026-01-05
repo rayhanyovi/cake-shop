@@ -10,7 +10,7 @@ export default function Footer() {
               Union Bakery
             </p>
             <div className="space-y-2 text-xs font-semibold uppercase tracking-wide">
-              <Link href="/shop" className="block hover:text-background/70">
+              <Link href="/shop/all" className="block hover:text-background/70">
                 Shop
               </Link>
               <Link

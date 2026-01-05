@@ -99,6 +99,7 @@ const CART_CACHE_KEY = "cartCache";
 const CHECKOUT_PENDING_KEY = "pendingCheckout";
 const ORDER_STORAGE_KEY = "lastOrder";
 const ORDER_TTL_MS = 5 * 60 * 1000;
+const ORDER_EVENT = "order:changed";
 
 const buildNote = (attributes: CartLine["attributes"]) => {
   if (!attributes?.length) return null;
@@ -266,6 +267,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
         await checkout(payload, accessToken ?? undefined);
         const storedOrder = buildOrderData(payload);
         localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(storedOrder));
+        window.dispatchEvent(new Event(ORDER_EVENT));
         localStorage.removeItem(CHECKOUT_PENDING_KEY);
         localStorage.removeItem(CART_CACHE_KEY);
         showToast("Checkout successful");
@@ -281,6 +283,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
         }, 1200);
       } catch (error) {
         console.error("Failed to checkout:", error);
+        showToast("Checkout failed. Please try again.");
       } finally {
         setIsCheckingOut(false);
       }
@@ -351,6 +354,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
       closeEditor();
     } catch (error) {
       console.error("Failed to update cart line:", error);
+      showToast("Failed to update cart. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -367,6 +371,7 @@ export default function CartPanel({ onClose }: CartPanelProps) {
       setSubtotal(cart?.cost?.subtotalAmount?.amount ?? null);
     } catch (error) {
       console.error("Failed to remove cart item:", error);
+      showToast("Failed to remove item. Please try again.");
     } finally {
       setRemovingLineId(null);
     }

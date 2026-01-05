@@ -4,9 +4,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
 } from "react";
 
 type AuthPayload = {
@@ -25,6 +24,9 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const STORAGE_KEY = "auth_state";
+const AUTH_EVENT = "auth:changed";
+let authCacheRaw: string | null = null;
+let authCache: AuthPayload | null = null;
 
 const isTokenValid = (expiresAt: string | null) => {
   if (!expiresAt) return false;
@@ -33,37 +35,58 @@ const isTokenValid = (expiresAt: string | null) => {
   return Date.now() < expiry;
 };
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [auth, setAuthState] = useState<AuthPayload | null>(null);
+const readAuthSnapshot = () => {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw === authCacheRaw) return authCache;
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return;
+  authCacheRaw = raw;
+  if (!raw) {
+    authCache = null;
+    return null;
+  }
 
-    try {
-      const parsed = JSON.parse(stored) as AuthPayload;
-      if (
-        parsed?.accessToken &&
-        parsed?.expiresAt &&
-        isTokenValid(parsed.expiresAt)
-      ) {
-        setAuthState(parsed);
-      } else {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
+  try {
+    const parsed = JSON.parse(raw) as AuthPayload;
+    if (
+      parsed?.accessToken &&
+      parsed?.expiresAt &&
+      isTokenValid(parsed.expiresAt)
+    ) {
+      authCache = parsed;
+      return authCache;
     }
-  }, []);
+  } catch {
+    authCache = null;
+    return null;
+  }
+
+  authCache = null;
+  return null;
+};
+
+const subscribeAuth = (callback: () => void) => {
+  if (typeof window === "undefined") return () => {};
+  const handler = () => callback();
+  window.addEventListener("storage", handler);
+  window.addEventListener(AUTH_EVENT, handler);
+  return () => {
+    window.removeEventListener("storage", handler);
+    window.removeEventListener(AUTH_EVENT, handler);
+  };
+};
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const auth = useSyncExternalStore(subscribeAuth, readAuthSnapshot, () => null);
 
   const setAuth = useCallback((payload: AuthPayload) => {
-    setAuthState(payload);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    window.dispatchEvent(new Event(AUTH_EVENT));
   }, []);
 
   const clearAuth = useCallback(() => {
-    setAuthState(null);
     localStorage.removeItem(STORAGE_KEY);
+    window.dispatchEvent(new Event(AUTH_EVENT));
   }, []);
 
   const value = useMemo<AuthContextValue>(

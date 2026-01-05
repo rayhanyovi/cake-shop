@@ -42,7 +42,9 @@ export default function ProductDetailPanel({
   const [cartMatches, setCartMatches] = useState<CartLine[]>([]);
   const [isCartChecking, setIsCartChecking] = useState(false);
   const addButtonRef = useRef<HTMLButtonElement | null>(null);
+  const errorTimeoutRef = useRef<number | null>(null);
   const [flySequence, setFlySequence] = useState(0);
+  const [actionError, setActionError] = useState<string | null>(null);
   const handleFlyArrive = useCallback(() => {
     window.dispatchEvent(new CustomEvent("cart:added"));
   }, []);
@@ -75,6 +77,7 @@ export default function ProductDetailPanel({
       ? unitAmount * quantity
       : null;
   const price = formatPrice(totalAmount ?? undefined);
+  const isOutOfStock = !selectedVariant?.availableForSale;
 
   useEffect(() => {
     const loadCartMatches = async () => {
@@ -106,6 +109,14 @@ export default function ProductDetailPanel({
     return () => window.clearTimeout(timer);
   }, [quantity]);
 
+  useEffect(() => {
+    return () => {
+      if (errorTimeoutRef.current) {
+        window.clearTimeout(errorTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const getAttributeValue = (attributes: CartLine["attributes"], key: string) =>
     attributes.find((item) => item.key.toLowerCase() === key.toLowerCase())
       ?.value ?? "";
@@ -116,6 +127,7 @@ export default function ProductDetailPanel({
     }
 
     setIsSubmitting(true);
+    setActionError(null);
     try {
       const payload = {
         variantId: selectedVariant.id,
@@ -153,6 +165,13 @@ export default function ProductDetailPanel({
       setFlySequence((value) => value + 1);
     } catch (error) {
       console.error("Failed to add to cart:", error);
+      setActionError("Unable to add to cart. Please try again.");
+      if (errorTimeoutRef.current) {
+        window.clearTimeout(errorTimeoutRef.current);
+      }
+      errorTimeoutRef.current = window.setTimeout(() => {
+        setActionError(null);
+      }, 3000);
     } finally {
       setIsSubmitting(false);
       setIsCartChecking(false);
@@ -318,6 +337,14 @@ export default function ProductDetailPanel({
         </div>
       ) : null}
 
+      <div className="min-h-[18px]">
+        {actionError ? (
+          <p className="text-xs text-destructive animate-in fade-in slide-in-from-top-2 duration-300">
+            {actionError}
+          </p>
+        ) : null}
+      </div>
+
       <div className="sticky bottom-0 mt-auto flex w-screen -mx-8 items-center justify-between border border-foreground bg-background px-6 py-4 text-xs uppercase tracking-[0.2em] md:w-full md:mx-0">
         <div className="space-y-2">
           <p className="font-semibold">Quantity</p>
@@ -352,11 +379,11 @@ export default function ProductDetailPanel({
           <button
             type="button"
             onClick={handleAddToCart}
-            disabled={!selectedVariant?.availableForSale || isSubmitting}
+            disabled={isOutOfStock || isSubmitting}
             ref={addButtonRef}
             className="bg-[#556B2F] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "Adding..." : "Add to cart"}
+            {isOutOfStock ? "Out of stock" : isSubmitting ? "Adding..." : "Add to cart"}
           </button>
         </div>
       </div>

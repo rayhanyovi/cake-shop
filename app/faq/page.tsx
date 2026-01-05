@@ -38,11 +38,11 @@ export default function FaqPage() {
       <section className="mx-auto w-full p-6">
         <div className="grid gap-8 md:grid-cols-3">
           <div>
-            <h1 className="text-lg font-semibold uppercase tracking-[0.2em] text-foreground">
+            <h1 className="text-lg font-bold uppercase tracking-[0.2em] text-foreground">
               Frequently Asked Questions
             </h1>
           </div>
-          <div className="space-y-4 text-sm text-muted-foreground">
+          <div className="space-y-4 text-sm text-muted-foreground col-span-2 xl:col-span-1">
             <Accordion type="single" collapsible className="w-full">
               {faqs.map((item) => (
                 <AccordionItem key={item.id} value={item.id}>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   getCustomerProfile,
   type CustomerProfile,
@@ -33,48 +33,64 @@ type StoredOrder = {
 };
 
 const ORDER_STORAGE_KEY = "lastOrder";
-const ORDER_TTL_MS = 5 * 60 * 1000;
+const ORDER_EVENT = "order:changed";
+let orderCacheRaw: string | null = null;
+let orderCache: StoredOrder | null = null;
 
-const readStoredOrder = () => {
+const readOrderSnapshot = () => {
   if (typeof window === "undefined") return null;
   const stored = localStorage.getItem(ORDER_STORAGE_KEY);
-  if (!stored) return null;
+  if (stored === orderCacheRaw) return orderCache;
+
+  orderCacheRaw = stored;
+  if (!stored) {
+    orderCache = null;
+    return null;
+  }
 
   try {
-    const parsed = JSON.parse(stored) as StoredOrder | OrderData;
-
+    const parsed = JSON.parse(stored) as StoredOrder;
     if (
       typeof parsed === "object" &&
       parsed !== null &&
       "data" in parsed &&
       "expiresAt" in parsed
     ) {
-      const expiresAt = Number((parsed as StoredOrder).expiresAt);
+      const expiresAt = Number(parsed.expiresAt);
       if (Number.isFinite(expiresAt) && Date.now() < expiresAt) {
-        return parsed as StoredOrder;
+        orderCache = parsed;
+        return orderCache;
       }
-      localStorage.removeItem(ORDER_STORAGE_KEY);
-      return null;
     }
-
-    const fallback = {
-      data: parsed as OrderData,
-      expiresAt: Date.now() + ORDER_TTL_MS,
-    };
-    localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(fallback));
-    return fallback;
   } catch {
-    localStorage.removeItem(ORDER_STORAGE_KEY);
+    orderCache = null;
     return null;
   }
+
+  orderCache = null;
+  return null;
+};
+
+const subscribeOrder = (callback: () => void) => {
+  if (typeof window === "undefined") return () => {};
+  const handler = () => callback();
+  window.addEventListener("storage", handler);
+  window.addEventListener(ORDER_EVENT, handler);
+  return () => {
+    window.removeEventListener("storage", handler);
+    window.removeEventListener(ORDER_EVENT, handler);
+  };
 };
 
 export default function OrderPage() {
   const { accessToken } = useAuth();
-  const [storedOrder, setStoredOrder] = useState<StoredOrder | null>(null);
+  const storedOrder = useSyncExternalStore(
+    subscribeOrder,
+    readOrderSnapshot,
+    () => null
+  );
   const order = storedOrder?.data ?? null;
   const [customer, setCustomer] = useState<CustomerProfile | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -90,26 +106,21 @@ export default function OrderPage() {
   }, [accessToken]);
 
   useEffect(() => {
-    setStoredOrder(readStoredOrder());
-    setIsHydrated(true);
-  }, []);
-
-  useEffect(() => {
     if (!storedOrder) return;
     const remaining = storedOrder.expiresAt - Date.now();
     if (remaining <= 0) {
       localStorage.removeItem(ORDER_STORAGE_KEY);
-      setStoredOrder(null);
+      window.dispatchEvent(new Event(ORDER_EVENT));
       return;
     }
     const timer = window.setTimeout(() => {
       localStorage.removeItem(ORDER_STORAGE_KEY);
-      setStoredOrder(null);
+      window.dispatchEvent(new Event(ORDER_EVENT));
     }, remaining);
     return () => window.clearTimeout(timer);
   }, [storedOrder]);
 
-  if (!isHydrated || !order) {
+  if (!order) {
     return (
       <main className="min-h-screen w-full px-6 py-12">
         <section className="mx-auto w-full max-w-2xl space-y-4 bg-card p-6">

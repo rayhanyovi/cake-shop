@@ -25,14 +25,9 @@ export default function AddToCartFlyer({
   const { anchorEl } = useCartAnchor();
   const dotRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
-  const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [start, setStart] = useState<Point | null>(null);
   const [end, setEnd] = useState<Point | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!trigger) return;
@@ -138,7 +133,8 @@ export default function AddToCartFlyer({
     };
   }, [visible, start, end, onArrive]);
 
-  if (!mounted || !visible) return null;
+  const portalHost = typeof document === "undefined" ? null : document.body;
+  if (!portalHost || !visible) return null;
 
   return createPortal(
     <div
@@ -147,6 +143,6 @@ export default function AddToCartFlyer({
       className="pointer-events-none fixed left-0 top-0 z-[9999] rounded-full bg-price"
       style={{ width: DOT_SIZE, height: DOT_SIZE }}
     />,
-    document.body
+    portalHost
   );
 }

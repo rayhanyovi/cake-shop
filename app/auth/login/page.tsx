@@ -29,6 +29,11 @@ function LoginFormContent() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [showPassword, setShowPassword] = useState(false);
   const { setAuth } = useAuth();
+  const feedback = errorMessage
+    ? { tone: "error", message: errorMessage }
+    : successMessage
+    ? { tone: "success", message: successMessage }
+    : null;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -153,17 +158,21 @@ function LoginFormContent() {
               </div>
             </div>
 
-            {errorMessage ? (
-              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {errorMessage}
-              </div>
-            ) : null}
-
-            {successMessage ? (
-              <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                {successMessage}
-              </div>
-            ) : null}
+            <div className="min-h-[44px]" aria-live="polite">
+              {feedback ? (
+                <div
+                  className={[
+                    "rounded-md px-3 py-2 text-sm animate-in fade-in slide-in-from-top-2 duration-300",
+                    feedback.tone === "error"
+                      ? "border border-destructive/30 bg-destructive/10 text-destructive"
+                      : "border border-emerald-200 bg-emerald-50 text-emerald-700",
+                  ].join(" ")}
+                  role={feedback.tone === "error" ? "alert" : "status"}
+                >
+                  {feedback.message}
+                </div>
+              ) : null}
+            </div>
 
             <Button className="w-full" disabled={isSubmitting} type="submit">
               {isSubmitting ? "Processing... Please wait." : "Log In"}

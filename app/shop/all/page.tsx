@@ -1,14 +1,18 @@
 import ProductCard from "@/src/components/ProductCard";
 import { getAllProductsCached, ProductListItem } from "@/src/services/product";
 
+export const dynamic = "force-dynamic";
+
 export default async function ShopAllPage() {
   let products: ProductListItem[] | [] = [];
+  let hasError = false;
 
   try {
     const response = await getAllProductsCached();
     console.log("ShopAllPage products response:", response);
     products = Array.isArray(response.data) ? response.data : [];
   } catch (error) {
+    hasError = true;
     console.error("Failed to load products:", error);
   }
 
@@ -26,7 +30,14 @@ export default async function ShopAllPage() {
           </p>
         </header>
 
-        {!hasProducts ? (
+        {hasError ? (
+          <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+            <p className="font-semibold uppercase tracking-[0.2em] text-foreground/80">
+              Unable to load products
+            </p>
+            <p>Please refresh the page or try again later.</p>
+          </div>
+        ) : !hasProducts ? (
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
             <p className="font-semibold uppercase tracking-[0.2em] text-foreground/80">
               Nothing on the shelf yet

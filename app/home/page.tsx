@@ -3,15 +3,21 @@ import Link from "next/link";
 import ProductCard from "@/src/components/ProductCard";
 import { getAllProductsCached, ProductListItem } from "@/src/services/product";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   let products: ProductListItem[] | [] = [];
+  let hasError = false;
 
   try {
     const response = await getAllProductsCached();
     products = Array.isArray(response.data) ? response.data.slice(0, 4) : [];
   } catch (error) {
+    hasError = true;
     console.error("Failed to load home products:", error);
   }
+
+  const hasProducts = products.length > 0;
 
   return (
     <main className="flex w-full flex-col -mt-18.25">
@@ -50,11 +56,22 @@ export default async function HomePage() {
             Shop now
           </Link>
         </div>
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {hasError ? (
+          <p className="mt-6 text-sm text-muted-foreground">
+            Unable to load products right now. Please check back soon.
+          </p>
+        ) : !hasProducts ? (
+          <p className="mt-6 text-sm text-muted-foreground">
+            No cakes available right now. Please check back soon.
+          </p>
+        ) : null}
+        {hasProducts ? (
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <section className="relative min-h-[70vh] w-full overflow-hidden">
